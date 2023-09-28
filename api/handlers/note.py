@@ -20,10 +20,15 @@ def get_notes():
     # TODO: авторизованный пользователь получает только свои заметки и публичные заметки других пользователей
     user = multi_auth.current_user()
     notes = NoteModel.query.all()
-    return notes_schema.dump(notes), 200
+    note = NoteModel.query.filter(NoteModel.author_id)
+    # note = NoteModel.query.get(id)
+    # if user.id == note:
+    if user.id == note:
+    # if notes.author_id == multi_auth.current_user().id:
+        return notes_schema.dump(notes), 200
 
 
-@app.route("/notes", methods=["POST"])
+@app.post("/notes")
 @multi_auth.login_required
 def create_note():
     user = multi_auth.current_user()
@@ -33,23 +38,29 @@ def create_note():
     return note_schema.dump(note), 201
 
 
-@app.route("/notes/<int:note_id>", methods=["PUT"])
+@app.put("/notes/<int:note_id>")
 @multi_auth.login_required
 def edit_note(note_id):
-    # TODO: Пользователь может редактировать ТОЛЬКО свои заметки.
+    # +TODO: Пользователь может редактировать ТОЛЬКО свои заметки.
     #  Попытка редактировать чужую заметку, возвращает ответ с кодом 403
-    author = multi_auth.current_user()
     note = get_object_or_404(NoteModel, note_id)
     note_data = request.json
-    note.text = note_data["text"]
-    note.private = note_data.get("private") or note.private
-    note.save()
-    return note_schema.dump(note), 200
+    if note.author_id == multi_auth.current_user().id:
+        note.text = note_data["text"]
+        note.private = note_data.get("private") or note.private
+        note.save()
+        return note_schema.dump(note), 200
+    # note.save()
+    return {"Error": "You can not delete this note"}, 403 
 
 
-@app.route("/notes/<int:note_id>", methods=["DELETE"])
+@app.delete("/notes/<int:note_id>")
 @multi_auth.login_required
-def delete_note(self, note_id):
-    # TODO: Пользователь может удалять ТОЛЬКО свои заметки.
+def delete_note(note_id):
+    note = get_object_or_404(NoteModel, note_id)
+    if note.author_id == multi_auth.current_user().id:
+        note.delete()
+        return {'Info': f'Message with id = {note_id} was deleted'}, 200
+    return {"Error": "You can not delete this note"}, 403
+    # +TODO: Пользователь может удалять ТОЛЬКО свои заметки.
     #  Попытка удалить чужую заметку, возвращает ответ с кодом 403
-    raise NotImplemented("Метод не реализован")

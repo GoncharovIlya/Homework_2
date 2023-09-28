@@ -18,11 +18,13 @@ def get_users():
     return users_schema.dump(users), 200
 
 
-@app.route("/users", methods=["POST"])
+@app.post("/users")
 def create_user():
     user_data = request.json
     user = UserModel(**user_data)
-    # TODO: добавить обработчик на создание пользователя с неуникальным username
+    # +TODO: добавить обработчик на создание пользователя с неуникальным username
+    if UserModel.query.filter(UserModel.username == user.username).one_or_none():
+        return {'error': 'User already exist'}, 409
     user.save()
     return user_schema.dump(user), 201
 
@@ -40,7 +42,9 @@ def edit_user(user_id):
 @app.route("/users/<int:user_id>", methods=["DELETE"])
 @multi_auth.login_required(role="admin")
 def delete_user(user_id):
-    """
-    Пользователь может удалять ТОЛЬКО свои заметки
-    """
-    raise NotImplemented("Метод не реализован")
+    user = get_object_or_404(UserModel, user_id)
+    if user == multi_auth.current_user():
+        return {'Error': 'You can not delete yourself'}, 409
+    user.delete()
+    return {'Info': f'User with id={user_id} was deleted'}, 200
+   
