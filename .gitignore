@@ -1,5 +1,12 @@
+*env
 .idea/
-__pycache__/
+.vscode/
+.vscode
+*.pyc
+__pycache__
+.DS_Store
+*.swp
+*.code-workspace
 upload/
 tmp/
 *env/
